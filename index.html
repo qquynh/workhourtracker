@@ -88,7 +88,7 @@
 <body>
     <div id="workHourTracker">
         <div id="status">Let's get started!</div>
-        <div id="currentTime">00:00:00</div>
+        <div id="currentTime">00:00</div>
         <div id="buttonContainer">
             <button class="emojiButton pauseButton" onclick="togglePauseResume()">⏸</button>
             <div id="workdayButtons">
@@ -105,7 +105,7 @@
     <script>
         let timerInterval;
         let startTime;
-        let displayedTime = "00:00:00";
+        let displayedTime = "00:00";
         let isWorkdayStarted = false;
         let isTimerPaused = false;
         let pausedTime = 0;
@@ -134,7 +134,7 @@
 
         function resetTimer() {
             clearInterval(timerInterval);
-            displayedTime = "00:00:00";
+            displayedTime = "00:00";
             pausedTime = 0;
             pauseResumeTime = 0;
             displayTime(displayedTime);
@@ -177,9 +177,8 @@
         function formatTime(time) {
             let hours = Math.floor(time / (60 * 60 * 1000));
             let minutes = Math.floor((time % (60 * 60 * 1000)) / (60 * 1000));
-            let seconds = Math.floor((time % (60 * 1000)) / 1000);
 
-            return `${padZero(hours)}:${padZero(minutes)}:${padZero(seconds)}`;
+            return `${padZero(hours)}:${padZero(minutes)}`;
         }
 
         function padZero(number) {
