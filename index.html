@@ -9,7 +9,7 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color:/* Updated translucent background color */
+            background-color: transparent; /* Updated transparent background */
         }
 
         #workHourTracker {
@@ -104,7 +104,7 @@
 <body>
 
 <div id="workHourTracker">
-    <div id="currentTime">00:00:00</div>
+    <div id="currentTime">00:00</div>
     <button id="pauseSign" class="emojiButton" onclick="togglePauseResume()">⏸</button>
     <div id="workdayButtons">
         <button id="startWorkdayBtn" class="actionButton" onclick="startWorkday()">Start Workday</button>
@@ -123,10 +123,16 @@
     let totalWorkTime = 0;
     let isWorkdayStarted = false;
     let isTimerPaused = false;
+    let pausedTime = 0;
 
     function startWorkday() {
         if (!isWorkdayStarted) {
-            startTime = new Date();
+            if (isTimerPaused) {
+                startTime = new Date() - pausedTime;
+            } else {
+                startTime = new Date();
+            }
+
             isWorkdayStarted = true;
             timerInterval = setInterval(updateTimer, 1000);
         }
@@ -136,7 +142,7 @@
         if (isWorkdayStarted) {
             clearInterval(timerInterval);
             let endTime = new Date();
-            let workTime = endTime - startTime;
+            let workTime = endTime - startTime + pausedTime;
             totalWorkTime += workTime;
             displayWorkdayLog(workTime);
             resetTimer();
@@ -147,6 +153,7 @@
     function resetTimer() {
         clearInterval(timerInterval);
         totalWorkTime = 0;
+        pausedTime = 0;
         displayTimer(0);
         isWorkdayStarted = false;
         isTimerPaused = false;
@@ -162,6 +169,14 @@
     }
 
     function togglePauseResume() {
+        if (isTimerPaused) {
+            startTime = new Date() - pausedTime;
+            timerInterval = setInterval(updateTimer, 1000);
+        } else {
+            clearInterval(timerInterval);
+            pausedTime = new Date() - startTime;
+        }
+
         isTimerPaused = !isTimerPaused;
         updatePauseResumeButton();
     }
@@ -172,11 +187,9 @@
     }
 
     function displayTimer(time) {
-        let hours = Math.floor(time / 3600000);
-        let minutes = Math.floor((time % 3600000) / 60000);
-        let seconds = Math.floor((time % 60000) / 1000);
+        let minutes = Math.floor(time / 60000);
 
-        let timeString = `${padZero(hours)}:${padZero(minutes)}:${padZero(seconds)}`;
+        let timeString = `${padZero(minutes)}:00`;
         document.getElementById("currentTime").innerText = timeString;
     }
 
@@ -204,9 +217,8 @@
     }
 
     function formatWorkTime(time) {
-        let hours = Math.floor(time / 3600000);
-        let minutes = Math.floor((time % 3600000) / 60000);
-        return `${hours}h ${minutes}m`;
+        let minutes = Math.floor(time / 60000);
+        return `${minutes}m`;
     }
 </script>
 
