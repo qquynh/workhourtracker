@@ -2,23 +2,25 @@
 <html>
 <head>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Glacial+Indifference&display=swap');
+
         body {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: transparent; /* Updated background color */
-            font-family: 'Glacial Indifference', Arial, sans-serif;
-            color: yellow;
+            background-color:/* Updated translucent background color */
         }
 
         #workHourTracker {
             width: 200px;
-            background-color: #B09E97; /* Updated widget color */
+            background-color: #F9F5F1; /* Updated widget color */
             border-radius: 5px;
             padding: 10px;
             text-align: center;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            color: #202123; /* Updated font color */
+            font-family: 'Glacial Indifference', Arial, sans-serif; /* Updated font */
         }
 
         #currentTime {
@@ -33,7 +35,7 @@
             border: none;
             outline: none;
             cursor: pointer;
-            color: yellow;
+            color: #202123; /* Updated font color */
         }
 
         #pauseSign {
@@ -48,13 +50,21 @@
 
         .actionButton {
             display: inline-block;
-            background-color: #887C76;
+            background-color: #3B6757; /* Updated "Start Workday" button color */
             color: white;
             border: none;
             border-radius: 3px;
             padding: 5px 10px;
             margin-bottom: 5px;
             cursor: pointer;
+        }
+
+        #endWorkdayBtn {
+            background-color: #B6A49C; /* Updated "End Workday" button color */
+        }
+
+        #resetBtn {
+            background-color: #DDDCDA; /* Updated "Reset" button color */
         }
 
         #workdayLog {
@@ -65,7 +75,7 @@
         #workdayLog h3 {
             margin: 0;
             font-size: 18px;
-            color: yellow;
+            color: #202123; /* Updated font color */
         }
 
         #workdayLog ul {
@@ -82,7 +92,7 @@
 
         .deleteButton {
             background-color: transparent;
-            color: yellow;
+            color: #202123; /* Updated font color */
             border: none;
             border-radius: 50%;
             padding: 5px;
@@ -108,114 +118,95 @@
 </div>
 
 <script>
-    var startTime = null;
-    var pauseTime = null;
-    var isPaused = false;
-    var workdayLog = [];
-    var totalWorkMinutes = 0;
-    var intervalId = null;
-
-    function updateCurrentTime() {
-        if (startTime) {
-            var currentTime = new Date();
-            var durationMilliseconds = currentTime - startTime;
-            if (pauseTime) {
-                durationMilliseconds -= pauseTime - startTime;
-            }
-            var durationSeconds = Math.floor(durationMilliseconds / 1000);
-            var durationHours = Math.floor(durationSeconds / 3600);
-            durationSeconds %= 3600;
-            var durationMinutes = Math.floor(durationSeconds / 60);
-            durationSeconds %= 60;
-
-            var formattedTime =
-                ('0' + durationHours).slice(-2) + ':' +
-                ('0' + durationMinutes).slice(-2) + ':' +
-                ('0' + durationSeconds).slice(-2);
-
-            document.getElementById('currentTime').innerText = formattedTime;
-        }
-    }
+    let timerInterval;
+    let startTime;
+    let totalWorkTime = 0;
+    let isWorkdayStarted = false;
+    let isTimerPaused = false;
 
     function startWorkday() {
-        startTime = new Date();
-        pauseTime = null;
-        document.getElementById('pauseSign').disabled = false;
-        intervalId = setInterval(updateCurrentTime, 1000);
-    }
-
-    function togglePauseResume() {
-        if (isPaused) {
-            startTime = new Date() - (pauseTime - startTime);
-            pauseTime = null;
-            isPaused = false;
-            intervalId = setInterval(updateCurrentTime, 1000);
-            document.getElementById('pauseSign').innerHTML = '⏸';
-        } else {
-            pauseTime = new Date();
-            isPaused = true;
-            clearInterval(intervalId);
-            document.getElementById('pauseSign').innerHTML = '▶️';
+        if (!isWorkdayStarted) {
+            startTime = new Date();
+            isWorkdayStarted = true;
+            timerInterval = setInterval(updateTimer, 1000);
         }
     }
 
     function endWorkday() {
-        if (startTime) {
-            var endTime = new Date();
-            var durationMilliseconds = endTime - startTime;
-            if (pauseTime) {
-                durationMilliseconds -= pauseTime - startTime;
-            }
-            var durationMinutes = Math.floor(durationMilliseconds / (1000 * 60));
-            var durationHours = Math.floor(durationMinutes / 60);
-            durationMinutes %= 60;
-
-            totalWorkMinutes += durationMinutes + durationHours * 60;
-
-            var logEntry = {
-                date: new Date().toLocaleDateString(),
-                duration: ('0' + durationHours).slice(-2) + 'h ' + ('0' + durationMinutes).slice(-2) + 'min'
-            };
-
-            workdayLog.push(logEntry);
-            startTime = null;
-            pauseTime = null;
-
-            // Update the workday log display
-            updateWorkdayLog();
+        if (isWorkdayStarted) {
+            clearInterval(timerInterval);
+            let endTime = new Date();
+            let workTime = endTime - startTime;
+            totalWorkTime += workTime;
+            displayWorkdayLog(workTime);
+            resetTimer();
+            isWorkdayStarted = false;
         }
     }
 
     function resetTimer() {
-        startTime = null;
-        pauseTime = null;
-        isPaused = false;
-        clearInterval(intervalId);
-        document.getElementById('currentTime').innerText = '00:00:00';
-        document.getElementById('pauseSign').innerHTML = '⏸';
-        document.getElementById('pauseSign').disabled = true;
+        clearInterval(timerInterval);
+        totalWorkTime = 0;
+        displayTimer(0);
+        isWorkdayStarted = false;
+        isTimerPaused = false;
+        updatePauseResumeButton();
     }
 
-    function deleteLogEntry(index) {
-        workdayLog.splice(index, 1);
-        updateWorkdayLog();
-    }
-
-    function updateWorkdayLog() {
-        var logList = document.getElementById('logList');
-        logList.innerHTML = '';
-
-        for (var i = 0; i < workdayLog.length; i++) {
-            var logEntry = workdayLog[i];
-
-            var logItem = document.createElement('li');
-            logItem.innerHTML =
-                '<span>' + logEntry.date + '</span>' +
-                logEntry.duration +
-                '<button class="deleteButton" onclick="deleteLogEntry(' + i + ')">x</button>';
-
-            logList.appendChild(logItem);
+    function updateTimer() {
+        if (!isTimerPaused) {
+            let currentTime = new Date();
+            let elapsedTime = currentTime - startTime + totalWorkTime;
+            displayTimer(elapsedTime);
         }
+    }
+
+    function togglePauseResume() {
+        isTimerPaused = !isTimerPaused;
+        updatePauseResumeButton();
+    }
+
+    function updatePauseResumeButton() {
+        let pauseResumeButton = document.getElementById("pauseSign");
+        pauseResumeButton.innerText = isTimerPaused ? "▶️" : "⏸";
+    }
+
+    function displayTimer(time) {
+        let hours = Math.floor(time / 3600000);
+        let minutes = Math.floor((time % 3600000) / 60000);
+        let seconds = Math.floor((time % 60000) / 1000);
+
+        let timeString = `${padZero(hours)}:${padZero(minutes)}:${padZero(seconds)}`;
+        document.getElementById("currentTime").innerText = timeString;
+    }
+
+    function padZero(number) {
+        return number.toString().padStart(2, "0");
+    }
+
+    function displayWorkdayLog(workTime) {
+        let workdayLog = document.getElementById("logList");
+        let currentDate = new Date().toLocaleDateString();
+        let logEntry = `${currentDate} - ${formatWorkTime(workTime)}`;
+
+        let listItem = document.createElement("li");
+        listItem.innerText = logEntry;
+
+        let deleteButton = document.createElement("button");
+        deleteButton.classList.add("deleteButton");
+        deleteButton.innerText = "✖️";
+        deleteButton.addEventListener("click", () => {
+            listItem.remove();
+        });
+
+        listItem.appendChild(deleteButton);
+        workdayLog.appendChild(listItem);
+    }
+
+    function formatWorkTime(time) {
+        let hours = Math.floor(time / 3600000);
+        let minutes = Math.floor((time % 3600000) / 60000);
+        return `${hours}h ${minutes}m`;
     }
 </script>
 
