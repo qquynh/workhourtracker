@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: transparent; /* Updated background color */
+            font-family: 'Glacial Indifference', Arial, sans-serif;
+            color: yellow;
+        }
+
+        #workHourTracker {
+            width: 200px;
+            background-color: #B09E97; /* Updated widget color */
+            border-radius: 5px;
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        #currentTime {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .emojiButton {
+            font-size: 24px;
+            margin-bottom: 10px;
+            background-color: transparent;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            color: yellow;
+        }
+
+        #pauseSign {
+            margin-bottom: 10px;
+        }
+
+        #workdayButtons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .actionButton {
+            display: inline-block;
+            background-color: #887C76;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 5px 10px;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+
+        #workdayLog {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #workdayLog h3 {
+            margin: 0;
+            font-size: 18px;
+            color: yellow;
+        }
+
+        #workdayLog ul {
+            padding: 0;
+            list-style: none;
+        }
+
+        #workdayLog li {
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .deleteButton {
+            background-color: transparent;
+            color: yellow;
+            border: none;
+            border-radius: 50%;
+            padding: 5px;
+            cursor: pointer;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="workHourTracker">
+    <div id="currentTime">00:00:00</div>
+    <button id="pauseSign" class="emojiButton" onclick="togglePauseResume()">⏸</button>
+    <div id="workdayButtons">
+        <button id="startWorkdayBtn" class="actionButton" onclick="startWorkday()">Start Workday</button>
+        <button id="endWorkdayBtn" class="actionButton" onclick="endWorkday()">End Workday</button>
+        <button id="resetBtn" class="actionButton" onclick="resetTimer()">Reset</button>
+    </div>
+    <div id="workdayLog">
+        <h3>Workday Log</h3>
+        <ul id="logList"></ul>
+    </div>
+</div>
+
+<script>
+    var startTime = null;
+    var pauseTime = null;
+    var isPaused = false;
+    var workdayLog = [];
+    var totalWorkMinutes = 0;
+    var intervalId = null;
+
+    function updateCurrentTime() {
+        if (startTime) {
+            var currentTime = new Date();
+            var durationMilliseconds = currentTime - startTime;
+            if (pauseTime) {
+                durationMilliseconds -= pauseTime - startTime;
+            }
+            var durationSeconds = Math.floor(durationMilliseconds / 1000);
+            var durationHours = Math.floor(durationSeconds / 3600);
+            durationSeconds %= 3600;
+            var durationMinutes = Math.floor(durationSeconds / 60);
+            durationSeconds %= 60;
+
+            var formattedTime =
+                ('0' + durationHours).slice(-2) + ':' +
+                ('0' + durationMinutes).slice(-2) + ':' +
+                ('0' + durationSeconds).slice(-2);
+
+            document.getElementById('currentTime').innerText = formattedTime;
+        }
+    }
+
+    function startWorkday() {
+        startTime = new Date();
+        pauseTime = null;
+        document.getElementById('pauseSign').disabled = false;
+        intervalId = setInterval(updateCurrentTime, 1000);
+    }
+
+    function togglePauseResume() {
+        if (isPaused) {
+            startTime = new Date() - (pauseTime - startTime);
+            pauseTime = null;
+            isPaused = false;
+            intervalId = setInterval(updateCurrentTime, 1000);
+            document.getElementById('pauseSign').innerHTML = '⏸';
+        } else {
+            pauseTime = new Date();
+            isPaused = true;
+            clearInterval(intervalId);
+            document.getElementById('pauseSign').innerHTML = '▶️';
+        }
+    }
+
+    function endWorkday() {
+        if (startTime) {
+            var endTime = new Date();
+            var durationMilliseconds = endTime - startTime;
+            if (pauseTime) {
+                durationMilliseconds -= pauseTime - startTime;
+            }
+            var durationMinutes = Math.floor(durationMilliseconds / (1000 * 60));
+            var durationHours = Math.floor(durationMinutes / 60);
+            durationMinutes %= 60;
+
+            totalWorkMinutes += durationMinutes + durationHours * 60;
+
+            var logEntry = {
+                date: new Date().toLocaleDateString(),
+                duration: ('0' + durationHours).slice(-2) + 'h ' + ('0' + durationMinutes).slice(-2) + 'min'
+            };
+
+            workdayLog.push(logEntry);
+            startTime = null;
+            pauseTime = null;
+
+            // Update the workday log display
+            updateWorkdayLog();
+        }
+    }
+
+    function resetTimer() {
+        startTime = null;
+        pauseTime = null;
+        isPaused = false;
+        clearInterval(intervalId);
+        document.getElementById('currentTime').innerText = '00:00:00';
+        document.getElementById('pauseSign').innerHTML = '⏸';
+        document.getElementById('pauseSign').disabled = true;
+    }
+
+    function deleteLogEntry(index) {
+        workdayLog.splice(index, 1);
+        updateWorkdayLog();
+    }
+
+    function updateWorkdayLog() {
+        var logList = document.getElementById('logList');
+        logList.innerHTML = '';
+
+        for (var i = 0; i < workdayLog.length; i++) {
+            var logEntry = workdayLog[i];
+
+            var logItem = document.createElement('li');
+            logItem.innerHTML =
+                '<span>' + logEntry.date + '</span>' +
+                logEntry.duration +
+                '<button class="deleteButton" onclick="deleteLogEntry(' + i + ')">x</button>';
+
+            logList.appendChild(logItem);
+        }
+    }
+</script>
+
+</body>
+</html>
