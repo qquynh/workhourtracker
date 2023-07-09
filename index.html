@@ -31,9 +31,6 @@
             cursor: pointer;
             color: #202123;
         }
-        #pauseSign {
-            margin-bottom: 10px;
-        }
         #workdayButtons {
             display: flex;
             flex-direction: column;
@@ -83,17 +80,22 @@
             cursor: pointer;
             outline: none;
         }
+        .pauseButton {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div id="workHourTracker">
         <div id="status">Let's get started!</div>
         <div id="currentTime">00:00:00</div>
-        <button id="pauseSign" class="emojiButton" onclick="togglePauseResume()">⏸</button>
-        <div id="workdayButtons">
-            <button id="startWorkdayBtn" class="actionButton" onclick="startWorkday()">Start Workday</button>
-            <button id="endWorkdayBtn" class="actionButton" onclick="endWorkday()">End Workday</button>
-            <button id="resetBtn" class="actionButton" onclick="resetTimer()">Reset</button>
+        <div id="buttonContainer">
+            <button class="emojiButton pauseButton" onclick="togglePauseResume()">⏸</button>
+            <div id="workdayButtons">
+                <button id="startWorkdayBtn" class="actionButton" onclick="startWorkday()">Start Workday</button>
+                <button id="endWorkdayBtn" class="actionButton" onclick="endWorkday()">End Workday</button>
+                <button id="resetBtn" class="actionButton" onclick="resetTimer()">Reset</button>
+            </div>
         </div>
         <div id="workdayLog">
             <h3>Workday Log</h3>
@@ -106,6 +108,8 @@
         let displayedTime = "00:00:00";
         let isWorkdayStarted = false;
         let isTimerPaused = false;
+        let pausedTime = 0;
+        let pauseResumeTime = 0;
 
         function startWorkday() {
             if (!isWorkdayStarted) {
@@ -113,21 +117,26 @@
                 isWorkdayStarted = true;
                 timerInterval = setInterval(updateTimer, 1000);
                 setStatus("Working");
+                togglePauseButtonVisibility(true); // Show the pause button
             }
         }
 
         function endWorkday() {
             if (isWorkdayStarted) {
                 clearInterval(timerInterval);
-                displayWorkdayLog(displayedTime);
+                let workTime = displayedTime; // Capture the time shown on the visual timer
+                displayWorkdayLog(workTime);
                 resetTimer();
                 isWorkdayStarted = false;
+                togglePauseButtonVisibility(false); // Hide the pause button
             }
         }
 
         function resetTimer() {
             clearInterval(timerInterval);
             displayedTime = "00:00:00";
+            pausedTime = 0;
+            pauseResumeTime = 0;
             displayTime(displayedTime);
             isWorkdayStarted = false;
             isTimerPaused = false;
@@ -139,7 +148,7 @@
             if (!isTimerPaused) {
                 let currentTime = new Date();
                 let elapsedTime = currentTime - startTime;
-                displayedTime = formatTime(elapsedTime);
+                displayedTime = formatTime(elapsedTime - pausedTime);
                 displayTime(displayedTime);
             }
         }
@@ -147,12 +156,12 @@
         function togglePauseResume() {
             if (isTimerPaused) {
                 let resumeTime = new Date();
-                startTime = resumeTime;
+                pausedTime += resumeTime - pauseResumeTime;
                 timerInterval = setInterval(updateTimer, 1000);
                 setStatus("Working");
             } else {
                 clearInterval(timerInterval);
-                startTime = new Date();
+                pauseResumeTime = new Date();
                 setStatus("Break time");
             }
 
@@ -161,7 +170,7 @@
         }
 
         function updatePauseResumeButton() {
-            let pauseResumeButton = document.getElementById("pauseSign");
+            let pauseResumeButton = document.querySelector(".pauseButton");
             pauseResumeButton.innerText = isTimerPaused ? "▶️" : "⏸";
         }
 
@@ -203,6 +212,10 @@
         function displayTime(time) {
             document.getElementById("currentTime").innerText = time;
         }
+
+        function togglePauseButtonVisibility(show) {
+            let pauseButton = document.querySelector(".pauseButton");
+            pauseButton.style.display = show ? "inline-block" : "none";
+        }
     </script>
 </body>
-</html>
