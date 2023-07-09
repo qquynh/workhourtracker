@@ -2,32 +2,26 @@
 <html>
 <head>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Glacial+Indifference&display=swap');
-
         body {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: transparent; /* Updated transparent background */
         }
-
         #workHourTracker {
             width: 200px;
-            background-color: #F9F5F1; /* Updated widget color */
+            background-color: #F9F5F1;
             border-radius: 5px;
             padding: 10px;
             text-align: center;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            color: #202123; /* Updated font color */
-            font-family: 'Glacial Indifference', Arial, sans-serif; /* Updated font */
+            color: #202123;
+            font-family: 'Glacial Indifference', Arial, sans-serif;
         }
-
         #currentTime {
             font-size: 48px;
             margin-bottom: 10px;
         }
-
         .emojiButton {
             font-size: 24px;
             margin-bottom: 10px;
@@ -35,22 +29,19 @@
             border: none;
             outline: none;
             cursor: pointer;
-            color: #202123; /* Updated font color */
+            color: #202123;
         }
-
         #pauseSign {
             margin-bottom: 10px;
         }
-
         #workdayButtons {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-
         .actionButton {
             display: inline-block;
-            background-color: #3B6757; /* Updated "Start Workday" button color */
+            background-color: #3B6757;
             color: white;
             border: none;
             border-radius: 3px;
@@ -58,41 +49,34 @@
             margin-bottom: 5px;
             cursor: pointer;
         }
-
         #endWorkdayBtn {
-            background-color: #B6A49C; /* Updated "End Workday" button color */
+            background-color: #B6A49C;
         }
-
         #resetBtn {
-            background-color: #DDDCDA; /* Updated "Reset" button color */
+            background-color: #DDDCDA;
         }
-
         #workdayLog {
             margin-top: 20px;
             text-align: center;
         }
-
         #workdayLog h3 {
             margin: 0;
             font-size: 18px;
-            color: #202123; /* Updated font color */
+            color: #202123;
         }
-
         #workdayLog ul {
             padding: 0;
             list-style: none;
         }
-
         #workdayLog li {
             margin-bottom: 5px;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
-
         .deleteButton {
             background-color: transparent;
-            color: #202123; /* Updated font color */
+            color: #202123;
             border: none;
             border-radius: 50%;
             padding: 5px;
@@ -102,125 +86,123 @@
     </style>
 </head>
 <body>
-
-<div id="workHourTracker">
-    <div id="currentTime">00:00</div>
-    <button id="pauseSign" class="emojiButton" onclick="togglePauseResume()">⏸</button>
-    <div id="workdayButtons">
-        <button id="startWorkdayBtn" class="actionButton" onclick="startWorkday()">Start Workday</button>
-        <button id="endWorkdayBtn" class="actionButton" onclick="endWorkday()">End Workday</button>
-        <button id="resetBtn" class="actionButton" onclick="resetTimer()">Reset</button>
+    <div id="workHourTracker">
+        <div id="status">Let's get started!</div>
+        <div id="currentTime">00:00:00</div>
+        <button id="pauseSign" class="emojiButton" onclick="togglePauseResume()">⏸</button>
+        <div id="workdayButtons">
+            <button id="startWorkdayBtn" class="actionButton" onclick="startWorkday()">Start Workday</button>
+            <button id="endWorkdayBtn" class="actionButton" onclick="endWorkday()">End Workday</button>
+            <button id="resetBtn" class="actionButton" onclick="resetTimer()">Reset</button>
+        </div>
+        <div id="workdayLog">
+            <h3>Workday Log</h3>
+            <ul id="logList"></ul>
+        </div>
     </div>
-    <div id="workdayLog">
-        <h3>Workday Log</h3>
-        <ul id="logList"></ul>
-    </div>
-</div>
+    <script>
+        let timerInterval;
+        let startTime;
+        let displayedTime = "00:00:00";
+        let isWorkdayStarted = false;
+        let isTimerPaused = false;
 
-<script>
-    let timerInterval;
-    let startTime;
-    let totalWorkTime = 0;
-    let isWorkdayStarted = false;
-    let isTimerPaused = false;
-    let pausedTime = 0;
-
-    function startWorkday() {
-        if (!isWorkdayStarted) {
-            if (isTimerPaused) {
-                startTime = new Date() - pausedTime;
-            } else {
+        function startWorkday() {
+            if (!isWorkdayStarted) {
                 startTime = new Date();
+                isWorkdayStarted = true;
+                timerInterval = setInterval(updateTimer, 1000);
+                setStatus("Working");
+            }
+        }
+
+        function endWorkday() {
+            if (isWorkdayStarted) {
+                clearInterval(timerInterval);
+                displayWorkdayLog(displayedTime);
+                resetTimer();
+                isWorkdayStarted = false;
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            displayedTime = "00:00:00";
+            displayTime(displayedTime);
+            isWorkdayStarted = false;
+            isTimerPaused = false;
+            updatePauseResumeButton();
+            setStatus("Let's get started!");
+        }
+
+        function updateTimer() {
+            if (!isTimerPaused) {
+                let currentTime = new Date();
+                let elapsedTime = currentTime - startTime;
+                displayedTime = formatTime(elapsedTime);
+                displayTime(displayedTime);
+            }
+        }
+
+        function togglePauseResume() {
+            if (isTimerPaused) {
+                let resumeTime = new Date();
+                startTime = resumeTime;
+                timerInterval = setInterval(updateTimer, 1000);
+                setStatus("Working");
+            } else {
+                clearInterval(timerInterval);
+                startTime = new Date();
+                setStatus("Break time");
             }
 
-            isWorkdayStarted = true;
-            timerInterval = setInterval(updateTimer, 1000);
-        }
-    }
-
-    function endWorkday() {
-        if (isWorkdayStarted) {
-            clearInterval(timerInterval);
-            let endTime = new Date();
-            let workTime = endTime - startTime + pausedTime;
-            totalWorkTime += workTime;
-            displayWorkdayLog(workTime);
-            resetTimer();
-            isWorkdayStarted = false;
-        }
-    }
-
-    function resetTimer() {
-        clearInterval(timerInterval);
-        totalWorkTime = 0;
-        pausedTime = 0;
-        displayTimer(0);
-        isWorkdayStarted = false;
-        isTimerPaused = false;
-        updatePauseResumeButton();
-    }
-
-    function updateTimer() {
-        if (!isTimerPaused) {
-            let currentTime = new Date();
-            let elapsedTime = currentTime - startTime + totalWorkTime;
-            displayTimer(elapsedTime);
-        }
-    }
-
-    function togglePauseResume() {
-        if (isTimerPaused) {
-            startTime = new Date() - pausedTime;
-            timerInterval = setInterval(updateTimer, 1000);
-        } else {
-            clearInterval(timerInterval);
-            pausedTime = new Date() - startTime;
+            isTimerPaused = !isTimerPaused;
+            updatePauseResumeButton();
         }
 
-        isTimerPaused = !isTimerPaused;
-        updatePauseResumeButton();
-    }
+        function updatePauseResumeButton() {
+            let pauseResumeButton = document.getElementById("pauseSign");
+            pauseResumeButton.innerText = isTimerPaused ? "▶️" : "⏸";
+        }
 
-    function updatePauseResumeButton() {
-        let pauseResumeButton = document.getElementById("pauseSign");
-        pauseResumeButton.innerText = isTimerPaused ? "▶️" : "⏸";
-    }
+        function formatTime(time) {
+            let hours = Math.floor(time / (60 * 60 * 1000));
+            let minutes = Math.floor((time % (60 * 60 * 1000)) / (60 * 1000));
+            let seconds = Math.floor((time % (60 * 1000)) / 1000);
 
-    function displayTimer(time) {
-        let minutes = Math.floor(time / 60000);
+            return `${padZero(hours)}:${padZero(minutes)}:${padZero(seconds)}`;
+        }
 
-        let timeString = `${padZero(minutes)}:00`;
-        document.getElementById("currentTime").innerText = timeString;
-    }
+        function padZero(number) {
+            return number.toString().padStart(2, "0");
+        }
 
-    function padZero(number) {
-        return number.toString().padStart(2, "0");
-    }
+        function displayWorkdayLog(time) {
+            let workdayLog = document.getElementById("logList");
+            let currentDate = new Date().toLocaleDateString();
+            let logEntry = `${currentDate} - ${time}`;
 
-    function displayWorkdayLog(workTime) {
-        let workdayLog = document.getElementById("logList");
-        let currentDate = new Date().toLocaleDateString();
-        let logEntry = `${currentDate} - ${formatWorkTime(workTime)}`;
+            let listItem = document.createElement("li");
+            listItem.innerText = logEntry;
 
-        let listItem = document.createElement("li");
-        listItem.innerText = logEntry;
+            let deleteButton = document.createElement("button");
+            deleteButton.classList.add("deleteButton");
+            deleteButton.innerText = "✖️";
+            deleteButton.addEventListener("click", () => {
+                listItem.remove();
+            });
 
-        let deleteButton = document.createElement("button");
-        deleteButton.classList.add("deleteButton");
-        deleteButton.innerText = "✖️";
-        deleteButton.addEventListener("click", () => {
-            listItem.remove();
-        });
+            listItem.appendChild(deleteButton);
+            workdayLog.appendChild(listItem);
+        }
 
-        listItem.appendChild(deleteButton);
-        workdayLog.appendChild(listItem);
-    }
+        function setStatus(message) {
+            document.getElementById("status").innerText = message;
+        }
 
-    function formatWorkTime(time) {
-        let minutes = Math.floor(time / 60000);
-        return `${minutes}m`;
-    }
-</script>
-
+        function displayTime(time) {
+            document.getElementById("currentTime").innerText = time;
+        }
+    </script>
 </body>
 </html>
